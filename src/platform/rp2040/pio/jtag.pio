@@ -1,0 +1,67 @@
+; @file jtag.pio
+; @brief PIO JTAG — TCK generation, TDI/TDO shift
+;
+; Pin mapping:
+;   OUT pin 0 = TDI
+;   IN  pin 0 = TDO
+;   SET pin 0 = TCK (sideset pin 0)
+;   SET pin 1 = TMS
+;
+; Protocol:
+;   1. Host writes 32-bit word: [bits_to_shift - 1] (lower 8 bits)
+;   2. Host writes TMS/TDI data words
+;   3. PIO shifts bits out on TDI, clocks TCK, reads TDO
+;   4. PIO pushes TDO data back to host
+;
+; SPDX-License-Identifier: MIT
+
+.program jtag_shift
+.side_set 1
+
+; Shift one bit per iteration
+; OSR contains TDI data (LSB first)
+; ISR accumulates TDO data
+; Sideset controls TCK
+
+.wrap_target
+    out pins, 1       side 0    ; Drive TDI, TCK low
+    nop               side 1    ; TCK rising edge — target samples TDI
+    in pins, 1        side 1    ; Read TDO on TCK high
+    nop               side 0    ; TCK falling edge
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void jtag_shift_program_init(PIO pio, uint sm, uint offset,
+                                            uint pin_tdi, uint pin_tdo,
+                                            uint pin_tck, float freq) {
+    pio_sm_config c = jtag_shift_program_get_default_config(offset);
+
+    /* OUT pin = TDI */
+    sm_config_set_out_pins(&c, pin_tdi, 1);
+    pio_gpio_init(pio, pin_tdi);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_tdi, 1, true);
+
+    /* IN pin = TDO */
+    sm_config_set_in_pins(&c, pin_tdo);
+    pio_gpio_init(pio, pin_tdo);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_tdo, 1, false);
+
+    /* Sideset = TCK */
+    sm_config_set_sideset_pins(&c, pin_tck);
+    pio_gpio_init(pio, pin_tck);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_tck, 1, true);
+
+    /* Shift settings */
+    sm_config_set_out_shift(&c, true, true, 32);   /* LSB first, autopull */
+    sm_config_set_in_shift(&c, true, true, 32);    /* LSB first, autopush */
+
+    /* Clock divider */
+    float div = clock_get_hz(clk_sys) / (freq * 4.0f); /* 4 instructions per bit */
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

@@ -1,0 +1,14 @@
+# Target labels
+ picotoolBuild
+# Source files and their labels
+/home/wm/.gemini/antigravity/playground/UniProger/build/CMakeFiles/picotoolBuild
+/home/wm/.gemini/antigravity/playground/UniProger/build/CMakeFiles/picotoolBuild.rule
+/home/wm/.gemini/antigravity/playground/UniProger/build/CMakeFiles/picotoolBuild-complete.rule
+/home/wm/.gemini/antigravity/playground/UniProger/build/picotool/src/picotoolBuild-stamp/picotoolBuild-build.rule
+/home/wm/.gemini/antigravity/playground/UniProger/build/picotool/src/picotoolBuild-stamp/picotoolBuild-configure.rule
+/home/wm/.gemini/antigravity/playground/UniProger/build/picotool/src/picotoolBuild-stamp/picotoolBuild-download.rule
+/home/wm/.gemini/antigravity/playground/UniProger/build/picotool/src/picotoolBuild-stamp/picotoolBuild-install.rule
+/home/wm/.gemini/antigravity/playground/UniProger/build/picotool/src/picotoolBuild-stamp/picotoolBuild-mkdir.rule
+/home/wm/.gemini/antigravity/playground/UniProger/build/picotool/src/picotoolBuild-stamp/picotoolBuild-patch.rule
+/home/wm/.gemini/antigravity/playground/UniProger/build/picotool/src/picotoolBuild-stamp/picotoolBuild-test.rule
+/home/wm/.gemini/antigravity/playground/UniProger/build/picotool/src/picotoolBuild-stamp/picotoolBuild-update.rule

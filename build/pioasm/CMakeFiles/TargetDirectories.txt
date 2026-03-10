@@ -1,0 +1,7 @@
+/home/wm/.gemini/antigravity/playground/UniProger/build/pioasm/CMakeFiles/pioasm.dir
+/home/wm/.gemini/antigravity/playground/UniProger/build/pioasm/CMakeFiles/edit_cache.dir
+/home/wm/.gemini/antigravity/playground/UniProger/build/pioasm/CMakeFiles/rebuild_cache.dir
+/home/wm/.gemini/antigravity/playground/UniProger/build/pioasm/CMakeFiles/list_install_components.dir
+/home/wm/.gemini/antigravity/playground/UniProger/build/pioasm/CMakeFiles/install.dir
+/home/wm/.gemini/antigravity/playground/UniProger/build/pioasm/CMakeFiles/install/local.dir
+/home/wm/.gemini/antigravity/playground/UniProger/build/pioasm/CMakeFiles/install/strip.dir

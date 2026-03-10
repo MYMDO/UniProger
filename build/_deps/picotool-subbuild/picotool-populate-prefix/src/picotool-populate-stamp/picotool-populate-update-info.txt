@@ -1,0 +1,7 @@
+# This is a generated file and its contents are an internal implementation detail.
+# The patch step will be re-executed if anything in this file changes.
+# No other meaning or use of this file is supported.
+
+command (connected)=/home/wm/.local/opt/cmake-3.28.3-linux-x86_64/bin/cmake;-Dcan_fetch=YES;-P;/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool-subbuild/picotool-populate-prefix/tmp/picotool-populate-gitupdate.cmake
+command (disconnected)=/home/wm/.local/opt/cmake-3.28.3-linux-x86_64/bin/cmake;-Dcan_fetch=NO;-P;/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool-subbuild/picotool-populate-prefix/tmp/picotool-populate-gitupdate.cmake
+work_dir=/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool-src

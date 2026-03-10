@@ -1,0 +1,7 @@
+/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool/picotool
+/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool/picotoolTargets.cmake
+/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool/picotoolTargets-release.cmake
+/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool/picotoolConfig.cmake
+/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool/picotoolConfigVersion.cmake
+/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool/enc_bootloader.elf
+/home/wm/.gemini/antigravity/playground/UniProger/build/_deps/picotool/enc_bootloader_mbedtls.elf

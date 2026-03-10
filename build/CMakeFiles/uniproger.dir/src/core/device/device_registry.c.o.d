@@ -1,0 +1,29 @@
+CMakeFiles/uniproger.dir/src/core/device/device_registry.c.o: \
+ /home/wm/.gemini/antigravity/playground/UniProger/src/core/device/device_registry.c \
+ /home/wm/.gemini/antigravity/playground/UniProger/src/core/device/device.h \
+ /home/wm/.gemini/antigravity/playground/UniProger/include/uniproger/types.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/stdint.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/machine/_default_types.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/features.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/_newlib_version.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/_intsup.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/_stdint.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/lib/gcc/arm-none-eabi/10.3.1/include/stddef.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/lib/gcc/arm-none-eabi/10.3.1/include/stdbool.h \
+ /home/wm/.gemini/antigravity/playground/UniProger/src/core/protocol/protocol.h \
+ /home/wm/.gemini/antigravity/playground/UniProger/include/uniproger/config.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/string.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/_ansi.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/newlib.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/config.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/machine/ieeefp.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/reent.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/_ansi.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/_types.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/machine/_types.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/lock.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/cdefs.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/_locale.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/strings.h \
+ /home/wm/.local/opt/gcc-arm-none-eabi-10.3-2021.10/arm-none-eabi/include/sys/string.h

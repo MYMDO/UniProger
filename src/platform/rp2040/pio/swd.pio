@@ -1,0 +1,83 @@
+; @file swd.pio
+; @brief PIO SWD — SWCLK generation, bidirectional SWDIO
+;
+; Pin mapping:
+;   SET pin 0 = SWCLK (also sideset)
+;   OUT/IN pin 0 = SWDIO (bidirectional)
+;
+; Protocol:
+;   Host controls direction via SM exec instructions.
+;   Write mode: OSR → SWDIO on SWCLK falling edge
+;   Read mode: SWDIO → ISR on SWCLK rising edge
+;
+; SPDX-License-Identifier: MIT
+
+.program swd_write
+.side_set 1
+
+; Write bits: drive SWDIO on falling, clock on rising
+.wrap_target
+    out pins, 1      side 0    ; Drive SWDIO, SWCLK low
+    nop              side 1    ; SWCLK rising edge — target samples
+.wrap
+
+.program swd_read
+.side_set 1
+
+; Read bits: sample SWDIO on rising edge
+.wrap_target
+    nop              side 0    ; SWCLK low
+    in pins, 1       side 1    ; SWCLK rising — sample SWDIO
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void swd_write_program_init(PIO pio, uint sm, uint offset,
+                                           uint pin_swdio, uint pin_swclk,
+                                           float freq) {
+    pio_sm_config c = swd_write_program_get_default_config(offset);
+
+    /* OUT = SWDIO */
+    sm_config_set_out_pins(&c, pin_swdio, 1);
+    pio_gpio_init(pio, pin_swdio);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_swdio, 1, true);
+
+    /* Sideset = SWCLK */
+    sm_config_set_sideset_pins(&c, pin_swclk);
+    pio_gpio_init(pio, pin_swclk);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_swclk, 1, true);
+
+    sm_config_set_out_shift(&c, true, true, 32);
+
+    float div = clock_get_hz(clk_sys) / (freq * 2.0f);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+
+static inline void swd_read_program_init(PIO pio, uint sm, uint offset,
+                                          uint pin_swdio, uint pin_swclk,
+                                          float freq) {
+    pio_sm_config c = swd_read_program_get_default_config(offset);
+
+    /* IN = SWDIO */
+    sm_config_set_in_pins(&c, pin_swdio);
+    pio_gpio_init(pio, pin_swdio);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_swdio, 1, false);
+
+    /* Sideset = SWCLK */
+    sm_config_set_sideset_pins(&c, pin_swclk);
+    pio_gpio_init(pio, pin_swclk);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin_swclk, 1, true);
+
+    sm_config_set_in_shift(&c, true, true, 32);
+
+    float div = clock_get_hz(clk_sys) / (freq * 2.0f);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

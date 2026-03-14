@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="UniProger.png" alt="UniProger Logo" width="200">
+  <img src="UniProger.png" alt="UniProger Logo">
 </p>
 
 ## 🚀 Концепція "Thin Bridge"

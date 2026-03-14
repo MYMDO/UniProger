@@ -1,12 +1,14 @@
 # UniProger — Universal Professional SaaS Programmer-Analyzer
 
-<p align="center">
-<b>Професійна SaaS-платформа для програмування, зчитування та аналізу мікросхем на базі RP2040</b>
-</p>
+---
 
-<p align="center">
-  <img src="UniProger.png" alt="UniProger Logo">
-</p>
+## Професійна SaaS-платформа для програмування, зчитування та аналізу мікросхем на базі RP2040
+
+---
+
+![UniProger Logo](UniProger.png "UniProger Logo")
+
+---
 
 ## 🚀 Концепція "Thin Bridge"
 На відміну від традиційних програматорів (Minipro, RT809, Flashcat), де вся логіка зашита у прошивку, **UniProger** використовує архітектуру **SaaS + Gateway**:

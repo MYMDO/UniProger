@@ -1,8 +1,19 @@
-# UniProger — Universal Professional Programmer-Analyzer
+# UniProger — Universal Professional SaaS Programmer-Analyzer
 
 <p align="center">
-<b>Масштабована програмно-апаратна платформа для програмування, зчитування, клонування та аналізу мікросхем</b>
+<b>Професійна SaaS-платформа для програмування, зчитування та аналізу мікросхем на базі RP2040</b>
 </p>
+
+<p align="center">
+  <img src="UniProger.png" alt="UniProger Logo" width="200">
+</p>
+
+## 🚀 Концепція "Thin Bridge"
+На відміну від традиційних програматорів (Minipro, RT809, Flashcat), де вся логіка зашита у прошивку, **UniProger** використовує архітектуру **SaaS + Gateway**:
+
+1.  **RP2040 (Bridge)**: Виступає як швидкісний шлюз. Він не знає алгоритмів конкретних мікросхем, а лише виконує низькорівневі команди (SPI/I2C/GPIO) через стабільний бінарний протокол.
+2.  **SaaS Server (Node.js)**: Містить всю "інтелектуальну" частину, алгоритми таймінгів, базу даних чіпів (10,000+) та логіку верифікації.
+3.  **Web Dashboard (React)**: Надає преміальний інтерфейс у браузері з WebSerial API для прямого керування "залізом" без встановлення драйверів.
 
 ---
 
@@ -10,175 +21,79 @@
 
 | Функція | Опис |
 |---------|------|
-| **Програмування** | Запис прошивок у Flash-пам'ять та мікроконтролери |
-| **Зчитування** | Дамп вмісту мікросхем пам'яті та MCU |
-| **Верифікація** | Порівняння записаних даних з оригіналом |
-| **Стирання** | Секторне та повне стирання Flash/MCU |
-| **Аналіз** | Сніфер протоколів SPI/I2C/UART/JTAG/SWD |
-| **Клонування** | Копіювання вмісту між однотипними чіпами |
-| **Емуляція** | Імітація цільового пристрою (розширюється) |
+| **SaaS Cloud** | Робота в браузері без необхідності встановлення софту |
+| **Універсальність** | Підтримка SPI, I2C, Microwire, OneWire, JTAG, SWD, UART |
+| **Logic Analyzer** | Вбудований сніфер протоколів для дебагу "на льоту" |
+| **Smart Identify** | Автоматичне визначення чіпа за JEDEC ID або сигнатурою |
+| **Hex Editor** | Професійний редактор дампів безпосередньо в інтерфейсі |
+| **Cloud Sync** | Ваші дампи та налаштування доступні з будь-якого пристрою |
 
-## 🔧 Підтримувані пристрої (MVP)
+---
 
-### Мікросхеми пам'яті
-- **SPI Flash**: W25Q16/32/64/128/256, GD25Q64/128, MX25L6433, AT25SF081
-- **I2C EEPROM**: 24C01–24C512 та сумісні
+## 🔧 Структура проєкту
 
-### Мікроконтролери
-- **AVR (ISP)**: ATmega328P, ATmega32/A, ATmega168, ATmega8, ATmega2560, ATtiny25/45/85
-- **STM32 (SWD)**: STM32F1xx та сумісні ARM Cortex-M
+- `/frontend`: React + Vite кабінет з підтримкою WebSerial.
+- `/backend`: Node.js сервер з базою даних чіпів та алгоритмами.
+- `/firmware`: C прошивка для RP2040 (Bridge Protocol).
+- `/include`: Спільні типи та HAL-інтерфейси.
 
-### Протоколи
-- SPI (Mode 0-3, до 62.5 MHz)
-- I2C (Standard/Fast/Fast+)
-- JTAG (TAP state machine, chain detection)
-- SWD (ARM Serial Wire Debug)
-- UART (passthrough, sniffer)
-- 1-Wire (Dallas/Maxim)
+---
 
-## 🏗️ Архітектура
+## 🏗️ Архітектура Системи
 
-```
-┌──────────────────────────────────────────────────┐
-│              CLI Shell  (USB CDC)                │
-├──────────────────────────────────────────────────┤
-│           Command Processor                      │
-├──────────────────────────────────────────────────┤
-│     Device Drivers (Plugin Registry)             │
-│   ┌──────────┬──────────┬────────┬──────────┐    │
-│   │ SPI Flash│I2C EEPROM│AVR ISP │ STM32 SWD│    │
-│   └──────────┴──────────┴────────┴──────────┘    │
-├──────────────────────────────────────────────────┤
-│        Protocol Engines                          │
-│   ┌─────┬─────┬──────┬─────┬──────┬────────┐     │
-│   │ SPI │ I2C │ JTAG │ SWD │ UART │ 1-Wire │     │
-│   └─────┴─────┴──────┴─────┴──────┴────────┘     │
-├──────────────────────────────────────────────────┤
-│     HAL (Hardware Abstraction Layer)             │
-├──────────────────────────────────────────────────┤
-│  Platform: RP2040 │ STM32 │ ESP32 │ RP2350       │
-└──────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    User((User Browser)) -- WebSerial --> Bridge[RP2040 Bridge]
+    User -- HTTPS --> SaaS[SaaS Cloud Server]
+    SaaS -- Algorithms --> User
+    Bridge -- SPI/I2C/JTAG --> Chip[Target Chip]
 ```
 
-**Ключова перевага**: заміна платформи потребує лише реалізації HAL-шару (~7 файлів), весь core-код залишається незмінним.
+---
 
-## 📦 Збірка
+## 📦 Швидкий старт (Development)
 
-### Вимоги
-**Ubuntu/Debian:**
+### 1. Збірка прошивки (RP2040)
 ```bash
-sudo apt update
-sudo apt install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential python3 g++
-```
-
-**Fedora:**
-```bash
-sudo dnf install cmake arm-none-eabi-gcc-cs arm-none-eabi-newlib gcc-c++ python3
-```
-- CMake ≥ 3.13
-- ARM GCC toolchain (`arm-none-eabi-gcc`)
-- [Pico SDK](https://github.com/raspberrypi/pico-sdk) (для RP2040)
-
-### Компіляція для RP2040
-
-```bash
-# Встановіть змінну середовища
-export PICO_SDK_PATH=/path/to/pico-sdk
-
-# Створіть директорію збірки
+cd firmware
 mkdir build && cd build
-
-# Конфігуруйте
-cmake -DUNIPROGER_PLATFORM=rp2040 ..
-
-# Зберіть
+cmake ..
 make -j$(nproc)
-
-# Результат: build/uniproger.uf2
+# Прошийте uniprog_bridge.uf2 на Pico
 ```
 
-### Прошивка
-
-1. Затисніть кнопку BOOTSEL на Pico
-2. Підключіть USB
-3. Скопіюйте файл:
+### 2. Запуск Backend
 ```bash
-cp build/uniproger.uf2 /media/$USER/RPI-RP2/
+cd backend
+npm install
+npm start
 ```
 
-## 🔌 Розводка контактів (Raspberry Pi Pico)
-
-| Функція | GPIO | Пін Pico |
-|---------|------|----------|
-| **SPI SCK** | GP2 | Pin 4 |
-| **SPI MOSI** | GP3 | Pin 5 |
-| **SPI MISO** | GP4 | Pin 6 |
-| **SPI CS** | GP5 | Pin 7 |
-| **I2C SDA** | GP0 | Pin 1 |
-| **I2C SCL** | GP1 | Pin 2 |
-| **JTAG TCK / SWD SWCLK** | GP18 | Pin 24 |
-| **JTAG TMS / SWD SWDIO** | GP19 | Pin 25 |
-| **JTAG TDI** | GP20 | Pin 26 |
-| **JTAG TDO** | GP21 | Pin 27 |
-| **nRESET** | GP22 | Pin 29 |
-| **AVR RST** | GP6 | Pin 9 |
-| **1-Wire** | GP7 | Pin 10 |
-| **UART TX** | GP8 | Pin 11 |
-| **UART RX** | GP9 | Pin 12 |
-| **VCC Enable** | GP26 | Pin 31 |
-
-## 💻 CLI команди
-
-```
-up> help
-  detect       Detect connected devices
-  info         Show system information
-  scan         Scan I2C bus for devices
-  pin          GPIO pin control
-  reset        Reset system
-  help         Show available commands
-  version      Show firmware version
+### 3. Запуск Frontend
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-## 🔌 Додавання нового пристрою
+---
 
-1. Створіть файл драйвера в `src/core/device/`:
+## 🔌 Розводка контактів (Pico Bridge)
 
-```c
-#include "device.h"
+| Сигнал | GPIO | Пін Pico | Опис |
+|---------|------|----------|------|
+| **MOSI / SDA** | GP19 | 25 | Data Out / Serial Data |
+| **SCK / SCL** | GP18 | 24 | Clock |
+| **MISO** | GP16 | 21 | Data In |
+| **CS / Reset**| GP17 | 22 | Chip Select / Reset |
+| **SWCLK / TCK**| GP18 | 24 | JTAG/SWD Clock |
+| **SWDIO / TMS**| GP19 | 25 | JTAG/SWD Data |
+| **TDI** | GP20 | 26 | JTAG Data In |
+| **TDO** | GP21 | 27 | JTAG Data Out |
+| **nRESET** | GP22 | 29 | System Reset |
 
-static up_status_t my_device_detect(up_device_t *dev) { /* ... */ }
-static up_status_t my_device_read(up_device_t *dev, ...) { /* ... */ }
-// ...
-
-const up_device_ops_t my_device_ops = {
-    .name    = "my_device",
-    .type    = UP_DEVICE_TYPE_GENERIC,
-    .detect  = my_device_detect,
-    .read    = my_device_read,
-    // ...
-};
-```
-
-2. Зареєструйте в `main.c`:
-```c
-extern const up_device_ops_t my_device_ops;
-up_device_register(&my_device_ops);
-```
-
-## 🔄 Портування на іншу платформу
-
-1. Створіть директорію `src/platform/<platform>/`
-2. Реалізуйте HAL-функції:
-   - `hal_gpio_*` — GPIO управління
-   - `hal_spi_*` — SPI периферія
-   - `hal_i2c_*` — I2C периферія  
-   - `hal_uart_*` — UART периферія
-   - `hal_timer_*` — Таймери та затримки
-   - `hal_pio_*` — PIO/bitbang (опціонально)
-   - `hal_platform_*` — Ініціалізація платформи
-3. Додайте в `CMakeLists.txt` нову секцію для платформи
+---
 
 ## 📄 Ліцензія
 
-MIT License — вільне використання у будь-яких проєктах.
+MIT License — Користуйтеся, створюйте, покращуйте.

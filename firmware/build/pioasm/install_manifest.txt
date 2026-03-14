@@ -1,0 +1,5 @@
+/home/wm/.gemini/antigravity/playground/UniProger/firmware/build/pioasm-install/pioasm/pioasm
+/home/wm/.gemini/antigravity/playground/UniProger/firmware/build/pioasm-install/pioasm/pioasmTargets.cmake
+/home/wm/.gemini/antigravity/playground/UniProger/firmware/build/pioasm-install/pioasm/pioasmTargets-release.cmake
+/home/wm/.gemini/antigravity/playground/UniProger/firmware/build/pioasm-install/pioasm/pioasmConfig.cmake
+/home/wm/.gemini/antigravity/playground/UniProger/firmware/build/pioasm-install/pioasm/pioasmConfigVersion.cmake

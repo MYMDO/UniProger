@@ -1,0 +1,109 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   UNIPROG — Design System
+   Industrial dark theme · Phosphor green · JetBrains Mono
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-void:     #060809;
+  --bg-base:     #0c1014;
+  --bg-surface:  #111820;
+  --bg-raised:   #162028;
+  --bg-overlay:  #1c2a36;
+  --bg-hover:    #1f3040;
+
+  --green:       #00ffa3;
+  --green-dim:   #00cc80;
+  --green-glow:  rgba(0,255,163,0.15);
+  --cyan:        #00d4ff;
+  --cyan-dim:    #00aacc;
+  --amber:       #ffb800;
+  --amber-dim:   #cc9200;
+  --red:         #ff4466;
+  --red-dim:     #cc2244;
+  --purple:      #b06aff;
+
+  --border:      rgba(0,255,163,0.12);
+  --border-dim:  rgba(255,255,255,0.06);
+  --border-hover:rgba(0,255,163,0.3);
+
+  --text-1:      #e8f4f0;
+  --text-2:      #8ba89e;
+  --text-3:      #4a6560;
+  --text-accent: #00ffa3;
+
+  --font-mono:   'JetBrains Mono', monospace;
+  --font-display:'Syne', sans-serif;
+  --font-ui:     'DM Sans', sans-serif;
+
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-void);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  overflow: hidden;
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--bg-overlay); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--green-dim); }
+
+/* ── Scanline overlay ────────────────────────────────────────────────────── */
+.scanline {
+  position: fixed; top:0; left:0; right:0; bottom:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none; z-index: 9999;
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes pulse-green { 0%,100%{opacity:1;box-shadow:0 0 6px var(--green)} 50%{opacity:0.6;box-shadow:0 0 2px var(--green)} }
+@keyframes pulse-amber { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes sweep { from{width:0} to{width:100%} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+@keyframes spin { to{transform:rotate(360deg)} }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes dataflow { 0%{background-position:0 0} 100%{background-position:40px 0} }
+
+.animate-in { animation: fadeIn 0.25s ease forwards; }
+.slide-in   { animation: slideIn 0.2s ease forwards; }
+
+/* ── Base elements ───────────────────────────────────────────────────────── */
+button { cursor: pointer; border: none; outline: none; font-family: var(--font-ui); }
+input, select, textarea { outline: none; font-family: var(--font-mono); }
+
+/* ── Tooltips ────────────────────────────────────────────────────────────── */
+.tooltip-wrap { position: relative; }
+.tooltip-wrap:hover .tooltip { opacity: 1; pointer-events: none; }
+.tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--bg-overlay); border: 1px solid var(--border);
+  color: var(--text-1); font-size: 10px; font-family: var(--font-mono);
+  padding: 4px 8px; border-radius: var(--r-sm); white-space: nowrap;
+  opacity: 0; transition: opacity 0.15s; z-index: 100;
+}
+
+/* ── Common input ────────────────────────────────────────────────────────── */
+.input-field {
+  background: var(--bg-void);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--r-md);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 12px;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.input-field:focus {
+  border-color: var(--border-hover);
+}

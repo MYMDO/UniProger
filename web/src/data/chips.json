@@ -1,0 +1,17 @@
+[
+  { "id":1,  "name":"W25Q128JV",   "mfr":"Winbond",   "type":"SPI Flash",   "size":"128Mb",  "proto":"SPI",  "voltage":"3.3V", "pkg":"SOP8",   "ops":["read","write","erase","verify","otp"], "time":"~45s" },
+  { "id":2,  "name":"W25Q64FV",    "mfr":"Winbond",   "type":"SPI Flash",   "size":"64Mb",   "proto":"SPI",  "voltage":"3.3V", "pkg":"SOP8",   "ops":["read","write","erase","verify","otp"], "time":"~22s" },
+  { "id":3,  "name":"MX25L12835F", "mfr":"Macronix",  "type":"SPI Flash",   "size":"128Mb",  "proto":"SPI",  "voltage":"3.3V", "pkg":"SOP16",  "ops":["read","write","erase","verify"],       "time":"~40s" },
+  { "id":4,  "name":"AT24C256",    "mfr":"Microchip", "type":"I2C EEPROM",  "size":"256Kb",  "proto":"I2C",  "voltage":"5V",   "pkg":"DIP8",   "ops":["read","write","verify"],               "time":"~3s"  },
+  { "id":5,  "name":"AT25DF321A",  "mfr":"Adesto",    "type":"SPI Flash",   "size":"32Mb",   "proto":"SPI",  "voltage":"3.3V", "pkg":"SOP8",   "ops":["read","write","erase","verify"],       "time":"~18s" },
+  { "id":6,  "name":"STM32F103C8", "mfr":"ST Micro",  "type":"MCU Flash",   "size":"64KB",   "proto":"SWD",  "voltage":"3.3V", "pkg":"LQFP48", "ops":["read","write","erase","verify","debug"],"time":"~8s"  },
+  { "id":7,  "name":"ATmega328P",  "mfr":"Microchip", "type":"MCU Flash",   "size":"32KB",   "proto":"SPI",  "voltage":"5V",   "pkg":"DIP28",  "ops":["read","write","erase","verify","fuse"], "time":"~6s"  },
+  { "id":8,  "name":"GD25Q64C",    "mfr":"GigaDevice","type":"SPI Flash",   "size":"64Mb",   "proto":"SPI",  "voltage":"3.3V", "pkg":"SOP8",   "ops":["read","write","erase","verify"],       "time":"~25s" },
+  { "id":9,  "name":"nRF52840",    "mfr":"Nordic",    "type":"MCU Flash",   "size":"1MB",    "proto":"SWD",  "voltage":"3V",   "pkg":"QFN73",  "ops":["read","write","erase","verify","debug"],"time":"~12s" },
+  { "id":10, "name":"ESP32-S3",    "mfr":"Espressif", "type":"MCU Flash",   "size":"8MB",    "proto":"JTAG", "voltage":"3.3V", "pkg":"QFN56",  "ops":["read","write","erase","verify"],       "time":"~30s" },
+  { "id":11, "name":"24LC512",     "mfr":"Microchip", "type":"I2C EEPROM",  "size":"512Kb",  "proto":"I2C",  "voltage":"5V",   "pkg":"DIP8",   "ops":["read","write","verify"],               "time":"~5s"  },
+  { "id":12, "name":"SST25VF016B", "mfr":"Microchip", "type":"SPI Flash",   "size":"16Mb",   "proto":"SPI",  "voltage":"3.3V", "pkg":"SOP16",  "ops":["read","write","erase","verify"],       "time":"~12s" },
+  { "id":13, "name":"DS18B20",     "mfr":"Maxim",     "type":"1-Wire ROM",  "size":"256B",   "proto":"1-Wire","voltage":"3.3V","pkg":"TO-92",  "ops":["read","write"],                        "time":"~0.5s"},
+  { "id":14, "name":"M95256",      "mfr":"ST Micro",  "type":"SPI EEPROM",  "size":"256Kb",  "proto":"SPI",  "voltage":"3.3V", "pkg":"SOP8",   "ops":["read","write","verify"],               "time":"~2s"  },
+  { "id":15, "name":"RP2040",      "mfr":"Raspberry", "type":"MCU Flash",   "size":"2MB",    "proto":"SWD",  "voltage":"3.3V", "pkg":"QFN56",  "ops":["read","write","erase","verify"],       "time":"~10s" }
+]

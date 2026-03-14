@@ -1,7 +1,5 @@
 # UniProger — Universal Professional SaaS Programmer-Analyzer
 
----
-
 ## Професійна SaaS-платформа для програмування, зчитування та аналізу мікросхем на базі RP2040
 
 ---

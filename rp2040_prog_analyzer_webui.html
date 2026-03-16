@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RP2040 Programmer-Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0c10;
+  --bg2:       #0f1218;
+  --bg3:       #141820;
+  --bg4:       #1a2030;
+  --border:    #1e2a3a;
+  --border2:   #2a3848;
+  --accent:    #00d4ff;
+  --accent2:   #0096cc;
+  --green:     #00ff88;
+  --green2:    #00cc6a;
+  --orange:    #ff8c00;
+  --red:       #ff3355;
+  --yellow:    #ffcc00;
+  --purple:    #8866ff;
+  --text:      #c8d8e8;
+  --text2:     #7890a8;
+  --text3:     #4a5a6a;
+  --mono:      'Share Tech Mono', monospace;
+  --sans:      'Barlow', sans-serif;
+  --cond:      'Barlow Condensed', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  height: 100vh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 48px 1fr;
+  grid-template-columns: 220px 1fr 280px;
+  grid-template-areas:
+    "header header header"
+    "sidebar main panel";
+}
+
+/* ── SCANLINE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ── HEADER ── */
+header {
+  grid-area: header;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: scan 4s linear infinite;
+}
+
+@keyframes scan {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%);  }
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  border-right: 1px solid var(--border);
+  height: 100%;
+  min-width: 220px;
+}
+
+.logo-chip {
+  width: 28px; height: 28px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.logo-chip svg { width: 100%; height: 100%; }
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.logo-text .product {
+  font-family: var(--cond);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.logo-text .sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.header-tabs {
+  display: flex;
+  height: 100%;
+  flex: 1;
+}
+
+.htab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 18px;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  font-family: var(--cond);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text2);
+  transition: all 0.15s;
+  position: relative;
+  white-space: nowrap;
+}
+
+.htab:hover { color: var(--text); background: rgba(255,255,255,0.02); }
+.htab.active { color: var(--accent); }
+.htab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.htab .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text3);
+}
+.htab.active .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.htab.ok .dot    { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.htab.warn .dot  { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  margin-left: auto;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text2);
+}
+
+.status-badge .led {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+
+.led-connected { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse-g 2s ease infinite; }
+.led-idle      { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.led-busy      { background: var(--orange); box-shadow: 0 0 8px var(--orange); animation: pulse-o 0.5s ease infinite; }
+.led-error     { background: var(--red); box-shadow: 0 0 8px var(--red); animation: pulse-r 0.4s ease infinite; }
+.led-off       { background: var(--text3); }
+
+@keyframes pulse-g { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes pulse-o { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes pulse-r { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.vcc-display {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--yellow);
+  background: rgba(255,204,0,0.08);
+  padding: 3px 8px;
+  border: 1px solid rgba(255,204,0,0.2);
+  border-radius: 2px;
+}
+
+/* ── SIDEBAR ── */
+aside {
+  grid-area: sidebar;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 10px 14px 6px;
+}
+
+.chip-list { overflow-y: auto; max-height: 220px; }
+.chip-list::-webkit-scrollbar { width: 3px; }
+.chip-list::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.chip-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.1s;
+  position: relative;
+}
+
+.chip-item:hover { background: rgba(255,255,255,0.03); }
+.chip-item.selected { background: rgba(0,212,255,0.06); }
+.chip-item.selected::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--accent);
+}
+
+.chip-icon {
+  width: 26px; height: 18px;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 7px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.chip-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-size {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+}
+
+.chip-badge {
+  font-size: 8px;
+  font-family: var(--cond);
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge-spi  { background: rgba(0,212,255,0.12); color: var(--accent); }
+.badge-i2c  { background: rgba(136,102,255,0.12); color: var(--purple); }
+.badge-swd  { background: rgba(0,255,136,0.12); color: var(--green); }
+.badge-isp  { background: rgba(255,140,0,0.12); color: var(--orange); }
+
+/* ── MAIN CONTENT ── */
+main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.main-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  background: var(--bg3);
+  color: var(--text);
+  font-family: var(--cond);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: rgba(0,212,255,0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn-primary:hover { background: rgba(0,212,255,0.18); }
+
+.btn-success {
+  background: rgba(0,255,136,0.1);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.btn-danger {
+  background: rgba(255,51,85,0.1);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.btn-warn {
+  background: rgba(255,140,0,0.1);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+.divider { width: 1px; height: 24px; background: var(--border); margin: 0 2px; }
+
+.speed-select {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.speed-select:focus { outline: none; border-color: var(--accent); }
+
+/* ── HEX EDITOR AREA ── */
+.main-content {
+  flex: 1;
+  display: grid;
+  grid-template-rows: 1fr 200px;
+  overflow: hidden;
+}
+
+.hex-area {
+  overflow: auto;
+  padding: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.7;
+  background: var(--bg);
+}
+
+.hex-area::-webkit-scrollbar { width: 6px; height: 6px; }
+.hex-area::-webkit-scrollbar-track { background: var(--bg2); }
+.hex-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+.hex-row {
+  display: flex;
+  gap: 0;
+  animation: hex-appear 0.1s ease both;
+}
+
+.hex-addr {
+  color: var(--text3);
+  min-width: 60px;
+  user-select: none;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+  margin-right: 12px;
+}
+
+.hex-bytes {
+  display: flex;
+  gap: 1px;
+  flex-wrap: nowrap;
+  flex: 1;
+}
+
+.hex-byte {
+  padding: 0 3px;
+  border-radius: 1px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.1s;
+  min-width: 22px;
+  text-align: center;
+}
+
+.hex-byte:hover { background: rgba(0,212,255,0.2); color: var(--accent); }
+.hex-byte.zero { color: var(--text3); }
+.hex-byte.ff   { color: var(--border2); }
+.hex-byte.changed { background: rgba(255,140,0,0.15); color: var(--orange); }
+.hex-byte.selected { background: rgba(0,212,255,0.25); color: var(--accent); }
+
+.hex-gap { min-width: 8px; }
+
+.hex-ascii {
+  color: var(--text2);
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+  margin-left: 4px;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+@keyframes hex-appear {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── LOG CONSOLE ── */
+.log-console {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.log-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.log-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  flex: 1;
+}
+
+.log-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 12px;
+}
+
+.log-body::-webkit-scrollbar { width: 3px; }
+.log-body::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.log-line {
+  display: flex;
+  gap: 10px;
+  line-height: 1.8;
+  animation: log-in 0.2s ease;
+}
+
+@keyframes log-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.log-time { color: var(--text3); font-family: var(--mono); font-size: 10px; flex-shrink: 0; }
+.log-tag  { font-family: var(--mono); font-size: 10px; min-width: 60px; flex-shrink: 0; }
+.log-msg  { font-family: var(--mono); font-size: 10px; color: var(--text2); }
+
+.log-ok   { color: var(--green); }
+.log-err  { color: var(--red); }
+.log-warn { color: var(--orange); }
+.log-info { color: var(--accent); }
+.log-data { color: var(--purple); }
+
+/* ── RIGHT PANEL ── */
+.right-panel {
+  grid-area: panel;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-section {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
+}
+
+.panel-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 10px;
+}
+
+/* ── CHIP INFO CARD ── */
+.chip-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 10px;
+}
+
+.chip-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.chip-card-icon {
+  width: 36px;
+  height: 24px;
+  position: relative;
+}
+
+.chip-svg { width: 100%; height: 100%; }
+
+.chip-card-name {
+  font-family: var(--cond);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.chip-card-family {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+}
+
+.chip-props { display: grid; gap: 4px; }
+
+.prop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prop-key {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.prop-val {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+}
+
+.prop-val.accent  { color: var(--accent); }
+.prop-val.green   { color: var(--green); }
+.prop-val.orange  { color: var(--orange); }
+.prop-val.yellow  { color: var(--yellow); }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  margin-top: 8px;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--bg4);
+  border-radius: 1px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  border-radius: 1px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 20px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+}
+
+.progress-fill.green {
+  background: linear-gradient(90deg, var(--green2), var(--green));
+}
+
+/* ── VOLTAGE CONTROL ── */
+.vcc-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.vcc-btn {
+  padding: 5px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--bg3);
+  color: var(--text2);
+}
+
+.vcc-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+.vcc-btn.active {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: rgba(255,204,0,0.1);
+}
+
+/* ── WAVEFORM ── */
+.waveform-area {
+  padding: 10px 14px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.waveform-canvas-wrap {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+canvas#waveform {
+  display: block;
+  width: 100%;
+}
+
+.waveform-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 4px;
+}
+
+.ch-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ch-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  min-width: 22px;
+  text-align: right;
+}
+
+.ch-line {
+  flex: 1;
+  height: 20px;
+  background: var(--bg);
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── JEDEC DISPLAY ── */
+.jedec-display {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.jedec-byte {
+  flex: 1;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: bold;
+  padding: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--accent);
+}
+
+.jedec-sub {
+  font-size: 7px;
+  color: var(--text3);
+  display: block;
+  margin-top: 2px;
+  letter-spacing: 0.05em;
+}
+
+/* ── OPERATION QUEUE ── */
+.op-list { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+
+.op-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--bg3);
+  border-radius: 2px;
+  border: 1px solid var(--border);
+}
+
+.op-status {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.op-done    { background: var(--green); }
+.op-pending { background: var(--text3); }
+.op-active  { background: var(--orange); animation: pulse-o 0.5s ease infinite; }
+.op-error   { background: var(--red); }
+
+.op-name {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text2);
+  flex: 1;
+}
+
+.op-time {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+}
+
+/* ── STATS GRID ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.stat-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  border-radius: 2px;
+}
+
+.stat-val {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text);
+}
+
+.stat-unit {
+  font-size: 9px;
+  color: var(--text3);
+  margin-left: 2px;
+}
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+/* ── ANIMATE ── */
+.fade-in { animation: fade-in 0.3s ease; }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SCROLLBAR GLOBAL ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── FILE DROP OVERLAY ── */
+.drop-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 100;
+  border: 2px dashed var(--accent);
+  margin: 16px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.drop-overlay.active { display: flex; }
+
+.drop-icon { font-size: 48px; }
+.drop-text {
+  font-family: var(--cond);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<!-- DROP OVERLAY -->
+<div class="drop-overlay" id="dropOverlay">
+  <div class="drop-icon">📂</div>
+  <div class="drop-text">Drop firmware file to program</div>
+  <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Supported: .bin · .hex · .elf · .uf2</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-logo">
+    <div class="logo-chip">
+      <svg viewBox="0 0 28 28" fill="none">
+        <!-- IC body -->
+        <rect x="4" y="6" width="20" height="16" fill="#1a2030" stroke="#2a3848" stroke-width="1"/>
+        <!-- Pins left -->
+        <rect x="0" y="9"  width="4" height="2" fill="#2a3848"/>
+        <rect x="0" y="13" width="4" height="2" fill="#2a3848"/>
+        <rect x="0" y="17" width="4" height="2" fill="#2a3848"/>
+        <!-- Pins right -->
+        <rect x="24" y="9"  width="4" height="2" fill="#2a3848"/>
+        <rect x="24" y="13" width="4" height="2" fill="#2a3848"/>
+        <rect x="24" y="17" width="4" height="2" fill="#2a3848"/>
+        <!-- Notch -->
+        <path d="M14 6 A2 2 0 0 1 10 6" fill="#0f1218"/>
+        <!-- Inner die -->
+        <rect x="8" y="10" width="12" height="8" fill="#141820"/>
+        <rect x="10" y="12" width="8" height="4" fill="none" stroke="#00d4ff" stroke-width="0.5" opacity="0.7"/>
+        <!-- Accent dot -->
+        <circle cx="14" cy="14" r="1.5" fill="#00d4ff" opacity="0.9"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <span class="product">RP2040 PROG</span>
+      <span class="sub">Universal Analyzer · v1.0.0</span>
+    </div>
+  </div>
+
+  <div class="header-tabs">
+    <div class="htab active ok" onclick="switchTab(this,'programmer')" data-tab="programmer">
+      <span class="dot"></span>PROGRAMMER
+    </div>
+    <div class="htab" onclick="switchTab(this,'analyzer')" data-tab="analyzer">
+      <span class="dot"></span>LOGIC ANALYZER
+    </div>
+    <div class="htab" onclick="switchTab(this,'uart')" data-tab="uart">
+      <span class="dot"></span>UART BRIDGE
+    </div>
+    <div class="htab" onclick="switchTab(this,'jtag')" data-tab="jtag">
+      <span class="dot"></span>JTAG / SWD
+    </div>
+    <div class="htab warn" onclick="switchTab(this,'avr')" data-tab="avr">
+      <span class="dot"></span>AVR ISP
+    </div>
+    <div class="htab" onclick="switchTab(this,'settings')" data-tab="settings">
+      <span class="dot"></span>SETTINGS
+    </div>
+  </div>
+
+  <div class="header-status">
+    <div class="status-badge">
+      <div class="led led-connected" id="connLed"></div>
+      <span id="connStatus">CONNECTED · COM7</span>
+    </div>
+    <div class="vcc-display" id="vccDisplay">3.30V · 12mA</div>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Chip Database</div>
+    <div style="padding:0 10px 8px">
+      <input id="chipSearch" placeholder="Search chips..." style="
+        width:100%;padding:5px 8px;background:var(--bg3);
+        border:1px solid var(--border2);border-radius:2px;
+        color:var(--text);font-family:var(--mono);font-size:10px;
+      " oninput="filterChips(this.value)">
+    </div>
+    <div class="chip-list" id="chipList"></div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-title">Recent Files</div>
+    <div style="padding:4px 0">
+      <div class="chip-item" onclick="loadFile('firmware_v1.2.bin')">
+        <div class="chip-icon">BIN</div>
+        <div class="chip-name">firmware_v1.2.bin</div>
+        <div class="chip-size">256K</div>
+      </div>
+      <div class="chip-item" onclick="loadFile('bootloader.hex')">
+        <div class="chip-icon">HEX</div>
+        <div class="chip-name">bootloader.hex</div>
+        <div class="chip-size">32K</div>
+      </div>
+      <div class="chip-item" onclick="loadFile('eeprom_dump.bin')">
+        <div class="chip-icon">BIN</div>
+        <div class="chip-name">eeprom_dump.bin</div>
+        <div class="chip-size">8K</div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-section" style="flex:1;overflow:auto">
+    <div class="sidebar-title">Quick Actions</div>
+    <div style="padding:6px 10px;display:flex;flex-direction:column;gap:4px">
+      <div class="btn btn-primary" onclick="quickDetect()" style="justify-content:center">⚡ Auto-Detect Chip</div>
+      <div class="btn btn-success" onclick="quickRead()" style="justify-content:center">↓ Read All</div>
+      <div class="btn btn-warn" onclick="quickErase()" style="justify-content:center">✕ Chip Erase</div>
+      <div class="btn btn-danger" onclick="quickProgram()" style="justify-content:center">↑ Program + Verify</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main>
+  <div class="main-toolbar">
+    <button class="btn btn-primary" onclick="detectChip()">⚡ DETECT</button>
+    <div class="divider"></div>
+    <button class="btn" onclick="readChip()">↓ READ</button>
+    <button class="btn btn-warn" onclick="eraseChip()">✕ ERASE</button>
+    <button class="btn btn-success" onclick="programChip()">↑ PROGRAM</button>
+    <button class="btn" onclick="verifyChip()">✓ VERIFY</button>
+    <div class="divider"></div>
+    <select class="speed-select" id="speedSel">
+      <option>100 kHz</option>
+      <option>500 kHz</option>
+      <option selected>1 MHz</option>
+      <option>4 MHz</option>
+      <option>8 MHz</option>
+      <option>20 MHz</option>
+      <option>50 MHz</option>
+    </select>
+    <div class="divider"></div>
+    <button class="btn" onclick="openFile()">📂 OPEN</button>
+    <button class="btn" onclick="saveFile()">💾 SAVE</button>
+    <div style="flex:1"></div>
+    <button class="btn" onclick="clearLog()">CLR LOG</button>
+  </div>
+
+  <div class="main-content">
+    <div class="hex-area" id="hexArea">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:12px;color:var(--text3)">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <rect x="6" y="12" width="36" height="28" rx="2" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="10" y="8" width="28" height="20" rx="1" fill="var(--bg3)" stroke="currentColor" stroke-width="1"/>
+          <path d="M18 18 L30 18 M18 22 L26 22" stroke="var(--accent)" stroke-width="1" opacity="0.5"/>
+          <circle cx="24" cy="28" r="6" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M21 28 L24 25 L27 28" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <div style="font-family:var(--mono);font-size:11px">No data loaded. Detect a chip or open a file.</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">Drag & drop .bin / .hex / .elf files here</div>
+        <div class="btn btn-primary" onclick="detectChip()" style="margin-top:4px">⚡ Auto-Detect Chip</div>
+      </div>
+    </div>
+
+    <div class="log-console">
+      <div class="log-header">
+        <span class="log-title">▶ Console Output</span>
+        <div class="btn" onclick="clearLog()" style="padding:2px 8px;font-size:9px">CLR</div>
+        <div class="btn" onclick="exportLog()" style="padding:2px 8px;font-size:9px">EXPORT</div>
+      </div>
+      <div class="log-body" id="logBody"></div>
+    </div>
+  </div>
+</main>
+
+<!-- RIGHT PANEL -->
+<div class="right-panel">
+  <!-- Chip Info -->
+  <div class="panel-section">
+    <div class="panel-label">Detected Chip</div>
+    <div class="chip-card" id="chipCard">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <svg width="40" height="26" viewBox="0 0 40 26" fill="none">
+          <rect x="4" y="2" width="32" height="22" fill="var(--bg4)" stroke="var(--border2)" stroke-width="1"/>
+          <rect x="0" y="5" width="4" height="2"  fill="var(--border2)"/>
+          <rect x="0" y="9" width="4" height="2"  fill="var(--border2)"/>
+          <rect x="0" y="13" width="4" height="2" fill="var(--border2)"/>
+          <rect x="0" y="17" width="4" height="2" fill="var(--border2)"/>
+          <rect x="36" y="5" width="4" height="2"  fill="var(--border2)"/>
+          <rect x="36" y="9" width="4" height="2"  fill="var(--border2)"/>
+          <rect x="36" y="13" width="4" height="2" fill="var(--border2)"/>
+          <rect x="36" y="17" width="4" height="2" fill="var(--border2)"/>
+          <rect x="10" y="6" width="20" height="14" fill="var(--bg3)" stroke="var(--border)" stroke-width="0.5"/>
+          <text x="20" y="15" text-anchor="middle" font-family="monospace" font-size="5" fill="var(--text3)">—</text>
+        </svg>
+        <div>
+          <div style="font-family:var(--cond);font-size:15px;font-weight:600;color:var(--text3)">—</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">No chip detected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JEDEC ID -->
+  <div class="panel-section">
+    <div class="panel-label">JEDEC ID</div>
+    <div class="jedec-display" id="jedecDisplay">
+      <div class="jedec-byte">--<span class="jedec-sub">MFR</span></div>
+      <div class="jedec-byte">--<span class="jedec-sub">DEV1</span></div>
+      <div class="jedec-byte">--<span class="jedec-sub">DEV2</span></div>
+    </div>
+  </div>
+
+  <!-- Voltage Control -->
+  <div class="panel-section">
+    <div class="panel-label">Target VCC</div>
+    <div class="vcc-buttons">
+      <div class="vcc-btn" onclick="setVcc(this,'1.8V')">1.8V</div>
+      <div class="vcc-btn" onclick="setVcc(this,'2.5V')">2.5V</div>
+      <div class="vcc-btn active" onclick="setVcc(this,'3.3V')">3.3V</div>
+      <div class="vcc-btn" onclick="setVcc(this,'5.0V')">5.0V</div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val" id="voltVal">3.31<span class="stat-unit">V</span></div>
+          <div class="stat-label">Voltage</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" id="currVal">12<span class="stat-unit">mA</span></div>
+          <div class="stat-label">Current</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="panel-section" id="progressSection" style="display:none">
+    <div class="panel-label">Operation Progress</div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="progressOp">Erasing...</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="op-list" id="opList"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="panel-section">
+    <div class="panel-label">Session Statistics</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="readBytes">0<span class="stat-unit">B</span></div>
+        <div class="stat-label">Bytes Read</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="writBytes">0<span class="stat-unit">B</span></div>
+        <div class="stat-label">Bytes Written</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="opsCount">0</div>
+        <div class="stat-label">Operations</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="errorCount" style="color:var(--red)">0</div>
+        <div class="stat-label">Errors</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Chip Database ─────────────────────────────────────────────────────────
+const CHIPS = [
+  { name:'W25Q128JV', family:'SPI NOR Flash', size:'16 MB', iface:'SPI',  jedec:'EF4018', page:256, sector:4096 },
+  { name:'W25Q64JV',  family:'SPI NOR Flash', size:'8 MB',  iface:'SPI',  jedec:'EF4017', page:256, sector:4096 },
+  { name:'W25Q256JV', family:'SPI NOR Flash', size:'32 MB', iface:'SPI',  jedec:'EF4019', page:256, sector:4096 },
+  { name:'MX25L128',  family:'SPI NOR Flash', size:'16 MB', iface:'SPI',  jedec:'C22018', page:256, sector:4096 },
+  { name:'GD25Q64C',  family:'SPI NOR Flash', size:'8 MB',  iface:'SPI',  jedec:'C84017', page:256, sector:4096 },
+  { name:'N25Q128',   family:'SPI NOR Flash', size:'16 MB', iface:'SPI',  jedec:'20BA18', page:256, sector:4096 },
+  { name:'AT24C256',  family:'I2C EEPROM',    size:'32 KB', iface:'I2C',  jedec:'------', page:64,  sector:64   },
+  { name:'AT24C512',  family:'I2C EEPROM',    size:'64 KB', iface:'I2C',  jedec:'------', page:128, sector:128  },
+  { name:'24C08',     family:'I2C EEPROM',    size:'1 KB',  iface:'I2C',  jedec:'------', page:16,  sector:16   },
+  { name:'ATmega328P',family:'AVR MCU',        size:'32 KB', iface:'ISP',  jedec:'1E950F', page:128, sector:128  },
+  { name:'ATmega2560',family:'AVR MCU',        size:'256KB', iface:'ISP',  jedec:'1E9801', page:256, sector:256  },
+  { name:'ATtiny85',  family:'AVR MCU',        size:'8 KB',  iface:'ISP',  jedec:'1E930B', page:64,  sector:64   },
+  { name:'STM32F103', family:'ARM Cortex-M3',  size:'128KB', iface:'SWD',  jedec:'06410041', page:1024, sector:1024},
+  { name:'STM32F4',   family:'ARM Cortex-M4',  size:'512KB', iface:'SWD',  jedec:'06430041', page:2048, sector:16384},
+  { name:'STM32H7',   family:'ARM Cortex-M7',  size:'2 MB',  iface:'SWD',  jedec:'06452041', page:512,  sector:131072},
+  { name:'nRF52840',  family:'Nordic BLE',     size:'1 MB',  iface:'SWD',  jedec:'2BA01477', page:4096, sector:4096},
+  { name:'S25FL128S', family:'SPI NOR Flash', size:'16 MB', iface:'SPI',  jedec:'012018', page:256, sector:4096 },
+  { name:'IS25LP128', family:'SPI NOR Flash', size:'16 MB', iface:'SPI',  jedec:'9D6018', page:256, sector:4096 },
+];
+
+const ifaceColors = { SPI:'badge-spi', I2C:'badge-i2c', SWD:'badge-swd', ISP:'badge-isp' };
+
+// ─── State ─────────────────────────────────────────────────────────────────
+let state = {
+  connected: true,
+  currentChip: null,
+  bytes_read: 0, bytes_written: 0,
+  ops: 0, errors: 0,
+  progress: 0,
+  vcc: '3.3V',
+};
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+function init() {
+  renderChipList(CHIPS);
+  startVoltageSimulation();
+  log('info', 'SYS', 'RP2040 Programmer-Analyzer Web UI v1.0.0');
+  log('ok',   'USB', 'Device connected on COM7  [RP2040 · FW 1.0.0]');
+  log('info', 'SYS', 'Ready. Select a chip or click Auto-Detect.');
+
+  // Drag and drop
+  document.addEventListener('dragover', e => { e.preventDefault(); document.getElementById('dropOverlay').classList.add('active'); });
+  document.addEventListener('dragleave', e => { if(!e.relatedTarget) document.getElementById('dropOverlay').classList.remove('active'); });
+  document.addEventListener('drop', e => { e.preventDefault(); document.getElementById('dropOverlay').classList.remove('active'); handleFileDrop(e.dataTransfer.files[0]); });
+
+  renderWaveform();
+}
+
+// ─── Chip List ─────────────────────────────────────────────────────────────
+function renderChipList(chips) {
+  const el = document.getElementById('chipList');
+  el.innerHTML = chips.map((c,i) => `
+    <div class="chip-item" onclick="selectChip(${i})" id="ci${i}">
+      <div class="chip-icon">${c.iface}</div>
+      <div class="chip-name">${c.name}</div>
+      <span class="chip-badge ${ifaceColors[c.iface]||'badge-spi'}">${c.iface}</span>
+    </div>
+  `).join('');
+}
+
+let _filteredChips = CHIPS;
+
+function filterChips(q) {
+  _filteredChips = !q ? CHIPS : CHIPS.filter(c =>
+    c.name.toLowerCase().includes(q.toLowerCase()) ||
+    c.family.toLowerCase().includes(q.toLowerCase())
+  );
+  renderChipList(_filteredChips);
+}
+
+function selectChip(idx) {
+  const chip = _filteredChips[idx];
+  document.querySelectorAll('.chip-item').forEach(e => e.classList.remove('selected'));
+  document.getElementById('ci' + idx)?.classList.add('selected');
+  state.currentChip = chip;
+  updateChipCard(chip);
+  log('info', 'CHIP', `Selected: ${chip.name}  ${chip.family}  ${chip.size}`);
+}
+
+// ─── Chip Card ─────────────────────────────────────────────────────────────
+function updateChipCard(chip) {
+  if (!chip) return;
+  const jedec = chip.jedec;
+  const j0 = jedec.slice(0,2), j1 = jedec.slice(2,4), j2 = jedec.slice(4,6);
+
+  document.getElementById('jedecDisplay').innerHTML = `
+    <div class="jedec-byte">${j0}<span class="jedec-sub">MFR</span></div>
+    <div class="jedec-byte">${j1}<span class="jedec-sub">DEV1</span></div>
+    <div class="jedec-byte">${j2}<span class="jedec-sub">DEV2</span></div>
+  `;
+
+  document.getElementById('chipCard').innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <svg width="40" height="26" viewBox="0 0 40 26" fill="none">
+        <rect x="4" y="2" width="32" height="22" fill="var(--bg4)" stroke="var(--accent)" stroke-width="1"/>
+        <rect x="0" y="5" width="4" height="2"  fill="var(--accent)"/><rect x="0" y="9" width="4" height="2"  fill="var(--accent)"/>
+        <rect x="0" y="13" width="4" height="2" fill="var(--accent)"/><rect x="0" y="17" width="4" height="2" fill="var(--accent)"/>
+        <rect x="36" y="5" width="4" height="2"  fill="var(--accent)"/><rect x="36" y="9" width="4" height="2"  fill="var(--accent)"/>
+        <rect x="36" y="13" width="4" height="2" fill="var(--accent)"/><rect x="36" y="17" width="4" height="2" fill="var(--accent)"/>
+        <rect x="10" y="6" width="20" height="14" fill="var(--bg3)" stroke="var(--accent)" stroke-width="0.5"/>
+        <text x="20" y="15" text-anchor="middle" font-family="monospace" font-size="4.5" fill="var(--accent)" opacity="0.8">${chip.name}</text>
+      </svg>
+      <div>
+        <div style="font-family:var(--cond);font-size:15px;font-weight:600;color:var(--text)">${chip.name}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">${chip.family}</div>
+      </div>
+    </div>
+    <div class="chip-props">
+      <div class="prop"><span class="prop-key">Size</span><span class="prop-val accent">${chip.size}</span></div>
+      <div class="prop"><span class="prop-key">Interface</span><span class="prop-val">${chip.iface}</span></div>
+      <div class="prop"><span class="prop-key">Page</span><span class="prop-val">${chip.page} B</span></div>
+      <div class="prop"><span class="prop-key">Sector</span><span class="prop-val">${chip.sector} B</span></div>
+      <div class="prop"><span class="prop-key">JEDEC</span><span class="prop-val green">${jedec}</span></div>
+    </div>
+  `;
+}
+
+// ─── Operations ───────────────────────────────────────────────────────────
+async function detectChip() {
+  log('info', 'CMD', 'Auto-detecting chip...');
+  showProgress('Detecting chip...', 0);
+  await animateProgress(0, 100, 800);
+  const chip = CHIPS[Math.floor(Math.random() * 6)]; // simulate detection
+  state.currentChip = chip;
+  updateChipCard(chip);
+  hideProgress();
+  log('ok', 'CHIP', `Detected: ${chip.name}  JEDEC=${chip.jedec}  Size=${chip.size}`);
+  state.ops++;
+  updateStats();
+  setTimeout(() => fillHexDemo(chip), 200);
+}
+
+async function readChip() {
+  if (!state.currentChip) { log('warn','CMD','No chip selected. Run Auto-Detect first.'); return; }
+  const chip = state.currentChip;
+  log('info', 'READ', `Reading ${chip.name}...`);
+  showProgress('Reading flash...', 0);
+  await animateProgress(0, 100, 1200);
+  hideProgress();
+  const bytes = parseSizeToBytes(chip.size);
+  state.bytes_read += bytes;
+  state.ops++;
+  log('ok', 'READ', `Read complete: ${bytes.toLocaleString()} bytes in 1.21s`);
+  log('data','READ', `Speed: ${(bytes/1024/1.21).toFixed(0)} KB/s`);
+  updateStats();
+  fillHexDemo(chip);
+}
+
+async function eraseChip() {
+  if (!state.currentChip) { log('warn','CMD','No chip selected.'); return; }
+  log('warn', 'ERASE', `Erasing ${state.currentChip.name}...`);
+  showProgress('Erasing chip...', 0);
+  await animateProgress(0, 100, 2000);
+  hideProgress();
+  log('ok', 'ERASE', 'Chip erase complete (1.98s)');
+  state.ops++;
+  updateStats();
+  document.getElementById('hexArea').innerHTML = renderErased();
+}
+
+async function programChip() {
+  if (!state.currentChip) { log('warn','CMD','No chip selected.'); return; }
+  const chip = state.currentChip;
+  log('info', 'PROG', `Programming ${chip.name}...`);
+  showProgress('Erasing...', 0);
+  await animateProgress(0, 33, 600);
+  document.getElementById('progressOp').textContent = 'Writing pages...';
+  await animateProgress(33, 70, 1000);
+  document.getElementById('progressOp').textContent = 'Verifying...';
+  await animateProgress(70, 100, 600);
+  hideProgress();
+  const bytes = parseSizeToBytes(chip.size);
+  state.bytes_written += bytes;
+  state.ops++;
+  log('ok', 'PROG', `Programming complete. ${bytes.toLocaleString()} bytes written`);
+  log('ok', 'VRFY', `Verification passed. CRC32=0xA1B2C3D4`);
+  updateStats();
+}
+
+async function verifyChip() {
+  if (!state.currentChip) { log('warn','CMD','No chip selected.'); return; }
+  log('info', 'VRFY', 'Verifying...');
+  showProgress('Verifying...', 0);
+  await animateProgress(0, 100, 900);
+  hideProgress();
+  log('ok', 'VRFY', 'Verification OK. All bytes match.');
+  state.ops++;
+  updateStats();
+}
+
+function quickDetect()  { detectChip(); }
+function quickRead()    { detectChip().then(() => readChip()); }
+function quickErase()   { eraseChip(); }
+function quickProgram() { programChip(); }
+
+// ─── Hex View ─────────────────────────────────────────────────────────────
+function fillHexDemo(chip) {
+  const rows = 24;
+  let html = '';
+  for (let r = 0; r < rows; r++) {
+    const addr = r * 16;
+    let bytes = '', ascii = '';
+    for (let b = 0; b < 16; b++) {
+      const v = Math.floor(Math.random() * 256);
+      const hex = v.toString(16).toUpperCase().padStart(2,'0');
+      let cls = 'hex-byte';
+      if (v === 0x00) cls += ' zero';
+      else if (v === 0xFF) cls += ' ff';
+      else if (Math.random() < 0.03) cls += ' changed';
+      const sep = b === 7 ? '<span class="hex-gap"></span>' : '';
+      bytes += `<span class="${cls}">${hex}</span>${sep}`;
+      ascii += (v >= 32 && v < 127) ? String.fromCharCode(v) : '·';
+    }
+    html += `
+      <div class="hex-row" style="animation-delay:${r*0.018}s">
+        <span class="hex-addr">${addr.toString(16).toUpperCase().padStart(8,'0')}</span>
+        <div class="hex-bytes">${bytes}</div>
+        <span class="hex-ascii">${ascii}</span>
+      </div>`;
+  }
+  document.getElementById('hexArea').innerHTML = html;
+}
+
+function renderErased() {
+  let html = '';
+  for (let r = 0; r < 16; r++) {
+    const addr = r * 16;
+    let bytes = '', ascii = '';
+    for (let b = 0; b < 16; b++) {
+      const sep = b === 7 ? '<span class="hex-gap"></span>' : '';
+      bytes += `<span class="hex-byte ff">FF</span>${sep}`;
+      ascii += '·';
+    }
+    html += `<div class="hex-row"><span class="hex-addr">${addr.toString(16).toUpperCase().padStart(8,'0')}</span><div class="hex-bytes">${bytes}</div><span class="hex-ascii">${ascii}</span></div>`;
+  }
+  return html;
+}
+
+// ─── Progress ─────────────────────────────────────────────────────────────
+function showProgress(label, pct) {
+  document.getElementById('progressSection').style.display = '';
+  document.getElementById('progressOp').textContent = label;
+  document.getElementById('progressPct').textContent = `${pct}%`;
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function hideProgress() {
+  document.getElementById('progressSection').style.display = 'none';
+}
+
+function animateProgress(from, to, durationMs) {
+  return new Promise(resolve => {
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min((now - start) / durationMs, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      const pct = Math.round(from + (to - from) * ease);
+      document.getElementById('progressPct').textContent = `${pct}%`;
+      document.getElementById('progressFill').style.width = pct + '%';
+      if (t < 1) requestAnimationFrame(step); else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+// ─── Logger ───────────────────────────────────────────────────────────────
+const logEl = document.getElementById('logBody');
+let logLines = 0;
+
+function log(type, tag, msg) {
+  const now = new Date();
+  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}.${String(now.getMilliseconds()).padStart(3,'0')}`;
+  const color = { ok:'log-ok', err:'log-err', warn:'log-warn', info:'log-info', data:'log-data' }[type] || 'log-info';
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-time">${ts}</span><span class="log-tag ${color}">[${tag.padEnd(5)}]</span><span class="log-msg">${msg}</span>`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+  logLines++;
+  if (logLines > 200) logEl.removeChild(logEl.firstChild);
+  if (type === 'err') { state.errors++; updateStats(); }
+}
+
+function clearLog() { logEl.innerHTML = ''; logLines = 0; }
+
+function exportLog() {
+  const text = Array.from(logEl.querySelectorAll('.log-line')).map(l => l.textContent).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+  a.download = 'prog_log.txt';
+  a.click();
+}
+
+// ─── Stats ─────────────────────────────────────────────────────────────────
+function formatBytes(b) {
+  if (b < 1024) return b + '';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + 'K';
+  return (b/1024/1024).toFixed(2) + 'M';
+}
+
+function updateStats() {
+  document.getElementById('readBytes').innerHTML  = formatBytes(state.bytes_read) + '<span class="stat-unit">B</span>';
+  document.getElementById('writBytes').innerHTML  = formatBytes(state.bytes_written) + '<span class="stat-unit">B</span>';
+  document.getElementById('opsCount').textContent = state.ops;
+  document.getElementById('errorCount').textContent = state.errors;
+}
+
+// ─── Voltage Simulation ────────────────────────────────────────────────────
+function startVoltageSimulation() {
+  setInterval(() => {
+    const vBase = {'1.8V':1800,'2.5V':2500,'3.3V':3300,'5.0V':5000}[state.vcc] || 3300;
+    const v = (vBase + (Math.random()-0.5)*20) / 1000;
+    const mA = 10 + Math.floor(Math.random()*8);
+    document.getElementById('voltVal').innerHTML = v.toFixed(2) + '<span class="stat-unit">V</span>';
+    document.getElementById('currVal').innerHTML = mA + '<span class="stat-unit">mA</span>';
+    document.getElementById('vccDisplay').textContent = `${v.toFixed(2)}V · ${mA}mA`;
+  }, 1500);
+}
+
+function setVcc(el, v) {
+  document.querySelectorAll('.vcc-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  state.vcc = v;
+  log('info', 'PWR', `Target VCC set to ${v}`);
+}
+
+// ─── Waveform Demo ─────────────────────────────────────────────────────────
+function renderWaveform() {
+  const ch = document.createElement('canvas');
+  ch.id = 'waveform';
+  ch.width = 252; ch.height = 100;
+  ch.style.width = '100%';
+  const wrap = document.createElement('div');
+  wrap.className = 'waveform-canvas-wrap';
+  wrap.style.marginTop = '8px';
+
+  const ctx = ch.getContext('2d');
+  const colors = ['#00d4ff','#00ff88','#ff8c00','#ff3355','#8866ff','#ffcc00','#00bcd4','#4caf50'];
+  const W = 252, H = 100;
+  ctx.fillStyle = '#0a0c10';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(30,42,58,0.8)';
+  ctx.lineWidth = 0.5;
+  for(let x=0;x<W;x+=12){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=12){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Waveforms
+  const nCh = 6;
+  const chH = H / nCh;
+  for(let c=0;c<nCh;c++){
+    const y0 = c*chH + chH*0.2;
+    const y1 = c*chH + chH*0.8;
+    ctx.strokeStyle = colors[c];
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    let x = 0;
+    while(x < W){
+      const pw = 4 + Math.floor(Math.random()*20);
+      ctx.moveTo(x,y0); ctx.lineTo(x+pw,y0);
+      ctx.moveTo(x+pw,y0); ctx.lineTo(x+pw,y1);
+      const pw2 = 3 + Math.floor(Math.random()*15);
+      ctx.moveTo(x+pw,y1); ctx.lineTo(x+pw+pw2,y1);
+      ctx.moveTo(x+pw+pw2,y1); ctx.lineTo(x+pw+pw2,y0);
+      x += pw + pw2;
+    }
+    ctx.stroke();
+  }
+  wrap.appendChild(ch);
+
+  // Insert above the right panel's last section
+  const wfArea = document.querySelector('.waveform-area');
+  if(!wfArea){
+    // Append to right panel if section exists
+    const rp = document.querySelector('.right-panel');
+    if(rp){
+      const ws = document.createElement('div');
+      ws.className='panel-section';
+      ws.innerHTML='<div class="panel-label">Waveform Preview</div>';
+      ws.appendChild(wrap);
+      rp.appendChild(ws);
+    }
+  }
+}
+
+// ─── File Handling ─────────────────────────────────────────────────────────
+function handleFileDrop(file) {
+  if (!file) return;
+  log('info','FILE',`Loaded: ${file.name}  (${file.size.toLocaleString()} bytes)`);
+}
+
+function openFile() {
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='.bin,.hex,.elf,.uf2';
+  inp.onchange = e => handleFileDrop(e.target.files[0]);
+  inp.click();
+}
+
+function saveFile() { log('info','FILE','Saving dump.bin...'); }
+function loadFile(n) { log('info','FILE','Loading: ' + n); }
+function parseSizeToBytes(s) {
+  const m = s.match(/([\d.]+)\s*(KB|MB|KB|B)/i);
+  if (!m) return 65536;
+  const n = parseFloat(m[1]);
+  return m[2].toLowerCase().startsWith('m') ? n*1024*1024 : n*1024;
+}
+
+// ─── Tab Switching ─────────────────────────────────────────────────────────
+function switchTab(el, tab) {
+  document.querySelectorAll('.htab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  log('info','NAV',`Switched to: ${tab.toUpperCase()}`);
+}
+
+init();
+</script>
+</body>
+</html>
